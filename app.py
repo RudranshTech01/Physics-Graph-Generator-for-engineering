@@ -100,7 +100,40 @@ def compute_axis_limits(x, y):
     return x_lo, x_hi, y_lo, y_hi
 
 
-def draw_common(ax, x, y, title, xlabel, ylabel, grid_enabled, point_labels):
+def add_student_info(ax, x, y, x_lo, x_hi, y_lo, y_hi, student_name, roll_no):
+    """Optional label inside the plot with student name / roll number.
+    Only drawn if at least one of the two fields was filled in.
+    Placed on the right side, but auto-picks top or bottom — whichever
+    corner has fewer data points nearby — so it doesn't sit on top of
+    the readings or the best-fit line/legend."""
+    parts = []
+    if student_name.strip():
+        parts.append(f"Name: {student_name.strip()}")
+    if roll_no.strip():
+        parts.append(f"Roll No.: {roll_no.strip()}")
+    if not parts:
+        return
+
+    x_mid = (x_lo + x_hi) / 2
+    y_mid = (y_lo + y_hi) / 2
+    top_right_count = int(np.sum((x >= x_mid) & (y >= y_mid)))
+    bottom_right_count = int(np.sum((x >= x_mid) & (y < y_mid)))
+
+    if top_right_count <= bottom_right_count:
+        y_pos, va = 0.96, "top"
+    else:
+        y_pos, va = 0.04, "bottom"
+
+    ax.text(
+        0.97, y_pos, "\n".join(parts),
+        transform=ax.transAxes, ha="right", va=va,
+        fontsize=9, color="dimgray",
+        bbox=dict(boxstyle="round,pad=0.35", facecolor="white", alpha=0.75, edgecolor="lightgray"),
+        zorder=5,
+    )
+
+
+def draw_common(ax, x, y, title, xlabel, ylabel, grid_enabled, point_labels, student_name="", roll_no=""):
     x_lo, x_hi, y_lo, y_hi = compute_axis_limits(x, y)
     ax.set_xlim(x_lo, x_hi)
     ax.set_ylim(y_lo, y_hi)
@@ -122,8 +155,10 @@ def draw_common(ax, x, y, title, xlabel, ylabel, grid_enabled, point_labels):
     ax.set_ylabel(ylabel, fontsize=12)
     ax.grid(grid_enabled, alpha=0.3)
 
+    add_student_info(ax, x, y, x_lo, x_hi, y_lo, y_hi, student_name, roll_no)
 
-def make_figure(x, y, title, xlabel, ylabel, fit_enabled, grid_enabled, point_labels):
+
+def make_figure(x, y, title, xlabel, ylabel, fit_enabled, grid_enabled, point_labels, student_name="", roll_no=""):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.scatter(x, y, s=65, marker="o", label="Experimental readings", zorder=3)
 
@@ -135,16 +170,16 @@ def make_figure(x, y, title, xlabel, ylabel, fit_enabled, grid_enabled, point_la
             y_line = slope * x_line + intercept
             ax.plot(x_line, y_line, linewidth=2, label=f"Best fit: y = {slope:.4g}x + {intercept:.4g}")
 
-    draw_common(ax, x, y, title, xlabel, ylabel, grid_enabled, point_labels)
+    draw_common(ax, x, y, title, xlabel, ylabel, grid_enabled, point_labels, student_name, roll_no)
     ax.legend()
     fig.tight_layout()
     return fig
 
 
-def make_connected_figure(x, y, title, xlabel, ylabel, grid_enabled, point_labels):
+def make_connected_figure(x, y, title, xlabel, ylabel, grid_enabled, point_labels, student_name="", roll_no=""):
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(x, y, marker="o", linewidth=2, markersize=6, label="Experimental readings")
-    draw_common(ax, x, y, title, xlabel, ylabel, grid_enabled, point_labels)
+    draw_common(ax, x, y, title, xlabel, ylabel, grid_enabled, point_labels, student_name, roll_no)
     ax.legend()
     fig.tight_layout()
     return fig
@@ -179,6 +214,11 @@ with st.sidebar:
     graph_type = st.selectbox("Graph style", ["Scatter + best-fit line", "Scatter only", "Connected points"])
     grid_enabled = st.checkbox("Show grid", True)
     point_labels = st.checkbox("Number data points", False)
+
+    st.subheader("🧑‍🎓 Student Details (optional)")
+    student_name = st.text_input("Your Name", "", placeholder="e.g. Rudransh Sharma")
+    roll_no = st.text_input("Roll No.", "", placeholder="e.g. 21")
+    st.caption("Leave blank if you don't want this shown on the graph.")
 
     if preset == "Malus's Law (I vs θ)":
         st.warning(
@@ -306,11 +346,14 @@ if valid:
     ylabel = unit_text(y_label, y_unit)
 
     if graph_type == "Scatter + best-fit line":
-        fig = make_figure(x_all, y_all, title, xlabel, ylabel, True, grid_enabled, point_labels)
+        fig = make_figure(x_all, y_all, title, xlabel, ylabel, True, grid_enabled, point_labels,
+                           student_name, roll_no)
     elif graph_type == "Scatter only":
-        fig = make_figure(x_all, y_all, title, xlabel, ylabel, False, grid_enabled, point_labels)
+        fig = make_figure(x_all, y_all, title, xlabel, ylabel, False, grid_enabled, point_labels,
+                           student_name, roll_no)
     else:
-        fig = make_connected_figure(x_all, y_all, title, xlabel, ylabel, grid_enabled, point_labels)
+        fig = make_connected_figure(x_all, y_all, title, xlabel, ylabel, grid_enabled, point_labels,
+                                     student_name, roll_no)
 
     st.pyplot(fig, clear_figure=False)
 
