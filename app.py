@@ -216,7 +216,7 @@ with st.sidebar:
     point_labels = st.checkbox("Number data points", False)
 
     st.subheader("🧑‍🎓 Student Details (optional)")
-    student_name = st.text_input("Your Name", "", placeholder="e.g. Rudransh Sharma")
+    student_name = st.text_input("Your Name", "", placeholder="e.g. Rudransh Pandey")
     roll_no = st.text_input("Roll No.", "", placeholder="e.g. 21")
     st.caption("Leave blank if you don't want this shown on the graph.")
 
